@@ -8,6 +8,7 @@ class Settings(BaseSettings):
         alias="FIREBASE_SERVICE_ACCOUNT_PATH",
     )
     firestore_database_id: str = Field(default="(default)", alias="FIRESTORE_DATABASE_ID")
+    anonymous_user_salt: str = Field(default="spill-anon", alias="ANONYMOUS_USER_SALT")
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -19,6 +19,8 @@ class Spill {
   final String? imageUrl;
   final DateTime timestamp;
 
+  String get displayUserName => _formatUserName(userId);
+
   factory Spill.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
 
@@ -61,6 +63,8 @@ class SpillComment {
   final String userId;
   final String message;
   final DateTime timestamp;
+
+  String get displayUserName => _formatUserName(userId);
 
   factory SpillComment.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -106,4 +110,14 @@ DateTime? _readTimestamp(Object? value) {
   }
 
   return null;
+}
+
+String _formatUserName(String userId) {
+  if (userId.startsWith('anonymous-')) {
+    final suffix = userId.substring('anonymous-'.length);
+    final shortId = suffix.length >= 6 ? suffix.substring(0, 6) : suffix;
+    return 'Anonymous #${shortId.toUpperCase()}';
+  }
+
+  return userId;
 }

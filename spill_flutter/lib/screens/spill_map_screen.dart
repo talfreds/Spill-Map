@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/spill_models.dart';
 import '../state/map_state.dart';
+import '../widgets/auth_sheet.dart';
 import '../widgets/spill_sheets.dart';
 
 typedef SpillMapBuilder = Widget Function({
@@ -37,6 +38,7 @@ class SpillMapScreen extends ConsumerWidget {
     final spills = ref.watch(spillsProvider);
     final remoteSpills = ref.watch(remoteSpillsProvider);
     final selectedSpillId = ref.watch(selectedSpillIdProvider);
+    final authState = ref.watch(authStateProvider);
 
     final markers = <Marker>{
       if (pin != null)
@@ -67,6 +69,14 @@ class SpillMapScreen extends ConsumerWidget {
           onLongPress: (latLng) async {
             await _handlePointSelection(context, ref, latLng);
           },
+        ),
+        Positioned(
+          top: 16,
+          left: 16,
+          child: _AuthStatusButton(
+            label: authState.valueOrNull?.email ?? 'Post as guest',
+            onPressed: () => showAuthSheet(context: context, ref: ref),
+          ),
         ),
         Positioned(
           top: 16,
@@ -165,6 +175,29 @@ class SpillMapScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => NewSpillSheet(point: point),
+    );
+  }
+}
+
+class _AuthStatusButton extends StatelessWidget {
+  const _AuthStatusButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(999),
+      child: FilledButton.tonalIcon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.person_outline),
+        label: Text(label),
+      ),
     );
   }
 }

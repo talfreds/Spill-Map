@@ -21,10 +21,37 @@ class SpillService {
   final FirebaseStorage _storage;
   final http.Client _httpClient;
 
+  Future<String?> _getCurrentUserIdToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return null;
+    }
+
+    final idToken = await user.getIdToken();
+    if (idToken == null || idToken.isEmpty) {
+      throw Exception('Could not obtain Firebase ID token.');
+    }
+
+    return idToken;
+  }
+
+  Future<Map<String, String>> _buildJsonHeaders() async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+
+    final idToken = await _getCurrentUserIdToken();
+    if (idToken != null) {
+      headers['Authorization'] = 'Bearer $idToken';
+    }
+
+    return headers;
+  }
+
   Future<String?> pickAndUploadPhoto() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      throw Exception('User must be signed in to upload a photo.');
+      throw Exception('Sign in to upload a photo.');
     }
 
     final image = await _imagePicker.pickImage(
@@ -56,16 +83,6 @@ class SpillService {
     required String message,
     String? imageUrl,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('User must be signed in to create a spill.');
-    }
-
-    final idToken = await user.getIdToken();
-    if (idToken == null || idToken.isEmpty) {
-      throw Exception('Could not obtain Firebase ID token.');
-    }
-
     final uri = Uri.parse('${SpillConfig.backendBaseUrl}/spill/create');
     final payload = {
       'lat': lat,
@@ -76,10 +93,7 @@ class SpillService {
 
     final response = await _httpClient.post(
       uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $idToken',
-      },
+      headers: await _buildJsonHeaders(),
       body: jsonEncode(payload),
     );
 
@@ -95,23 +109,10 @@ class SpillService {
     required String spillId,
     required String message,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('User must be signed in to comment.');
-    }
-
-    final idToken = await user.getIdToken();
-    if (idToken == null || idToken.isEmpty) {
-      throw Exception('Could not obtain Firebase ID token.');
-    }
-
     final uri = Uri.parse('${SpillConfig.backendBaseUrl}/spill/$spillId/comments');
     final response = await _httpClient.post(
       uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': ['Bearer', idToken].join(' '),
-      },
+      headers: await _buildJsonHeaders(),
       body: jsonEncode({
         'message': message,
       }),

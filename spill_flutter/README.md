@@ -27,11 +27,12 @@ The key should be enabled for Maps SDK for Android, Maps SDK for iOS, Maps JavaS
 Long-press on the map now opens a spill sheet that:
 
 1. accepts a message,
-2. optionally picks an image from gallery via `image_picker`,
-3. uploads that image to Firebase Storage,
+2. posts anonymously when no user is signed in,
+3. optionally picks an image from gallery via `image_picker` when a user is signed in,
+4. uploads that image to Firebase Storage,
 4. sends `lat`, `lng`, `message`, and `image_url` to backend endpoint `/spill/create`.
 
-The request includes `Authorization: Bearer <Firebase ID token>`.
+If a user is signed in, the request includes `Authorization: Bearer <Firebase ID token>`. If not, the backend accepts the request as a guest post and assigns a stable anonymous ID derived from the client IP.
 
 ## Required `--dart-define` values (web)
 

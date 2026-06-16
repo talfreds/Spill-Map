@@ -77,7 +77,12 @@ The API provides `POST /spill/create` with payload:
 }
 ```
 
-Write requests require a Firebase ID token:
+Write requests accept either:
+
+- no `Authorization` header, in which case the backend attributes the write to a stable anonymous ID derived from the client IP, or
+- a Firebase ID token, in which case the write is attributed to the authenticated Firebase user.
+
+When provided, the auth header is:
 
 ```text
 Authorization: Bearer <firebase-id-token>
@@ -107,12 +112,15 @@ npm run backend:docker:arm64
 The map long-press flow now supports:
 
 - entering a spill message
-- selecting a photo from gallery (`image_picker`)
-- uploading the photo to Firebase Storage
+- posting the spill anonymously when no user is signed in
+- selecting a photo from gallery (`image_picker`) when signed in
+- uploading the photo to Firebase Storage when signed in
 - attaching the uploaded public URL to the spill payload before calling `POST /spill/create`
 - immediately rendering the new spill marker from the create response while Firestore listeners stay reactive
 - opening a spill detail sheet from the map or feed with the original post and real-time comments
-- submitting comments through the backend while the Firestore-backed comment list updates live
+- submitting comments through the backend as either an authenticated user or a stable anonymous identity while the Firestore-backed comment list updates live
+
+Anonymous writes store a `user_id` shaped like `anonymous-<hash>`. The UI renders that as `Anonymous #XXXXXX`.
 
 For web runtime initialization, pass Firebase values as `--dart-define` values:
 

@@ -21,7 +21,7 @@ SPILL_COMMENTS_COLLECTION = "spill_comments"
 
 @router.post("/create", response_model=SpillResponse)
 async def create_spill(payload: CreateSpillRequest, request: Request) -> SpillResponse:
-    user_id = _require_user_id(request)
+    user_id = _resolve_user_id(request)
 
     db = get_firestore_client()
     spill_ref = db.collection(SPILLS_COLLECTION).document()
@@ -54,7 +54,7 @@ async def create_spill_comment(
     payload: CreateSpillCommentRequest,
     request: Request,
 ) -> SpillCommentResponse:
-    user_id = _require_user_id(request)
+    user_id = _resolve_user_id(request)
 
     db = get_firestore_client()
     spill_ref = db.collection(SPILLS_COLLECTION).document(spill_id)
@@ -81,9 +81,13 @@ async def create_spill_comment(
     )
 
 
-def _require_user_id(request: Request) -> str:
+def _resolve_user_id(request: Request) -> str:
     user_id = getattr(request.state, "user_id", None)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthenticated request")
+    if user_id:
+        return user_id
 
-    return user_id
+    anonymous_user_id = getattr(request.state, "anonymous_user_id", None)
+    if anonymous_user_id:
+        return anonymous_user_id
+
+    raise HTTPException(status_code=500, detail="Could not resolve request identity")

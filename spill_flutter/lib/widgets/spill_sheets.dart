@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/spill_models.dart';
 import '../state/map_state.dart';
+import 'auth_sheet.dart';
 
 Future<void> showSpillDetailSheet({
   required BuildContext context,
@@ -136,6 +137,7 @@ class _NewSpillSheetState extends ConsumerState<NewSpillSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final user = ref.watch(authStateProvider).valueOrNull;
 
     return FractionallySizedBox(
       heightFactor: 0.8,
@@ -165,10 +167,32 @@ class _NewSpillSheetState extends ConsumerState<NewSpillSheet> {
               ),
             ),
             const SizedBox(height: 16),
+            if (user == null) ...[
+              Text(
+                'This spill will be posted as ${_displayAnonymousIdentityHint()}. Sign in if you want to attach a photo or use your account identity.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _isSubmitting || _isUploadingPhoto
+                      ? null
+                      : () => showAuthSheet(context: context, ref: ref),
+                  child: const Text('Sign in or register'),
+                ),
+              ),
+            ],
             OutlinedButton.icon(
-              onPressed: _isUploadingPhoto || _isSubmitting ? null : _pickPhoto,
+              onPressed: _isUploadingPhoto || _isSubmitting || user == null
+                  ? null
+                  : _pickPhoto,
               icon: const Icon(Icons.photo_library_outlined),
-              label: Text(_isUploadingPhoto ? 'Uploading photo...' : 'Add photo'),
+              label: Text(
+                user == null
+                    ? 'Sign in to add a photo'
+                    : (_isUploadingPhoto ? 'Uploading photo...' : 'Add photo'),
+              ),
             ),
             const SizedBox(height: 12),
             if (_imageUrl != null)
@@ -271,6 +295,7 @@ class _SpillDetailSheetState extends ConsumerState<SpillDetailSheet> {
     final spill = ref.watch(spillByIdProvider(widget.spillId));
     final comments = ref.watch(spillCommentsProvider(widget.spillId));
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final user = ref.watch(authStateProvider).valueOrNull;
 
     return FractionallySizedBox(
       heightFactor: 0.92,
@@ -334,25 +359,49 @@ class _SpillDetailSheetState extends ConsumerState<SpillDetailSheet> {
             top: false,
             child: Padding(
               padding: EdgeInsets.fromLTRB(16, 12, 16, bottomInset + 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      enabled: !_isSubmitting,
-                      minLines: 1,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Write a comment',
-                        border: OutlineInputBorder(),
-                      ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      user == null
+                          ? 'Commenting as anonymous.'
+                          : 'Commenting as ${user.email ?? user.uid}.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _isSubmitting ? null : _submitComment,
-                    child: Text(_isSubmitting ? 'Sending...' : 'Comment'),
+                  if (user == null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => showAuthSheet(context: context, ref: ref),
+                        child: const Text('Sign in or register'),
+                      ),
+                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentController,
+                          enabled: !_isSubmitting,
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'Write a comment',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton(
+                        onPressed: _isSubmitting ? null : _submitComment,
+                        child: Text(_isSubmitting ? 'Sending...' : 'Comment'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -380,7 +429,7 @@ class _SpillHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Posted by ${spill.userId} · ${_formatTimestamp(spill.timestamp)}',
+          'Posted by ${spill.displayUserName} · ${_formatTimestamp(spill.timestamp)}',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 4),
@@ -430,7 +479,7 @@ class _CommentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              comment.userId,
+              comment.displayUserName,
               style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 4),
@@ -445,6 +494,10 @@ class _CommentCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _displayAnonymousIdentityHint() {
+  return 'an anonymous profile based on your connection';
 }
 
 String _formatTimestamp(DateTime timestamp) {
