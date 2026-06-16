@@ -1,2 +1,9 @@
 node_modules/
 .env
+.tooling/
+spill_flutter/web/index.html.bak
+spill_flutter/build/
+spill_flutter/.dart_tool/
+spill_flutter/.flutter-plugins
+spill_flutter/.flutter-plugins-dependencies
+spill_flutter/.packages

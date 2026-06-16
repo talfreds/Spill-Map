@@ -2,6 +2,8 @@
 
 PinChat phase 1 in this repository is limited to Firebase/GCP bootstrapping for authentication.
 
+This repository now also includes a Flutter frontend shell in `spill_flutter` for web preview in Codespaces and future native mobile builds.
+
 ## Files added
 
 - `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/config.js` – Firebase web app config loader
@@ -14,6 +16,45 @@ PinChat phase 1 in this repository is limited to Firebase/GCP bootstrapping for 
 ```bash
 npm install
 ```
+
+## Flutter frontend shell (Codespaces + mobile-ready)
+
+The Flutter app lives in `spill_flutter` and is managed from repository root scripts.
+
+### One-time setup
+
+```bash
+npm run flutter:install
+npm run flutter:pub:get
+```
+
+### Run web preview in Codespaces
+
+```bash
+npm run flutter:web:run
+```
+
+Then open port `8080` in Codespaces preview.
+
+### Flutter test command
+
+```bash
+npm run flutter:test
+```
+
+### Maps key behavior
+
+- Flutter web map script uses `GOOGLE_API_KEY` only.
+- `spill_flutter/web/index.html` is committed with a placeholder token (`__MAPS_API_KEY__`) only.
+- `scripts/flutter-web-run.sh` injects `GOOGLE_API_KEY` at runtime and restores the placeholder when the process exits.
+- `npm run flutter:web:prepare-env` validates env and template state without writing secrets to tracked files.
+- Keep `FIREBASE_API_KEY` for Firebase web SDK usage and auth flows.
+
+TODO before production:
+- Create separate Google Maps keys for `dev` and `prod`.
+- Restrict the web key by HTTP referrers to only approved domains.
+- Restrict enabled APIs on the key to only required Maps and Places APIs.
+- Rotate any key used during early development before shipping.
 
 ## Firebase initialization
 

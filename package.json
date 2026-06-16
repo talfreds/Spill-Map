@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "validate:auth": "node --env-file-if-exists=.env scripts/validate-auth.js"
+    "validate:auth": "node --env-file-if-exists=.env scripts/validate-auth.js",
+    "flutter:install": "bash scripts/install-flutter.sh",
+    "flutter:web:prepare-env": "node --env-file-if-exists=.env scripts/prepare-flutter-web-env.js",
+    "flutter:pub:get": "cd spill_flutter && ../.tooling/flutter/bin/flutter pub get",
+    "flutter:web:run": "bash scripts/flutter-web-run.sh",
+    "flutter:test": "cd spill_flutter && ../.tooling/flutter/bin/flutter test"
   },
   "repository": {
     "type": "git",
