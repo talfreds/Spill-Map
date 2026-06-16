@@ -1,34 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import '../models/spill_models.dart';
 import '../state/map_state.dart';
+import 'spill_sheets.dart';
 
 class SpillFeed extends ConsumerWidget {
   const SpillFeed({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedSpill = ref.watch(selectedSpillProvider);
+    final spills = ref.watch(spillsProvider);
+    final remoteSpills = ref.watch(remoteSpillsProvider);
+    final selectedSpillId = ref.watch(selectedSpillIdProvider);
+    final spillItems = spills.valueOrNull ?? const <Spill>[];
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      body: Column(
         children: [
-          // Header
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Text(
-              'Recent Spills',
-              style: Theme.of(context).textTheme.headlineMedium,
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Recent Spills',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
             ),
           ),
-          // Sample spill cards
-          ..._buildSpillCards(context, ref, selectedSpill),
+          Expanded(
+            child: remoteSpills.when(
+              data: (_) => _buildFeedBody(
+                context: context,
+                ref: ref,
+                spills: spillItems,
+                selectedSpillId: selectedSpillId,
+              ),
+              loading: () {
+                if (spillItems.isNotEmpty) {
+                  return _buildFeedBody(
+                    context: context,
+                    ref: ref,
+                    spills: spillItems,
+                    selectedSpillId: selectedSpillId,
+                  );
+                }
+
+                return const Center(child: CircularProgressIndicator());
+              },
+              error: (error, _) {
+                if (spillItems.isNotEmpty) {
+                  return _buildFeedBody(
+                    context: context,
+                    ref: ref,
+                    spills: spillItems,
+                    selectedSpillId: selectedSpillId,
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Could not load spills: $error'),
+                );
+              },
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _showNewSpillDialog(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tap the map to place a new spill.')),
+          );
         },
         tooltip: 'New Spill',
         child: const Icon(Icons.add),
@@ -37,40 +82,54 @@ class SpillFeed extends ConsumerWidget {
     );
   }
 
+  Widget _buildFeedBody({
+    required BuildContext context,
+    required WidgetRef ref,
+    required List<Spill> spills,
+    required String? selectedSpillId,
+  }) {
+    if (spills.isEmpty) {
+      return const Center(
+        child: Text('No spills yet. Tap the map to create one.'),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: _buildSpillCards(context, ref, spills, selectedSpillId),
+    );
+  }
+
   List<Widget> _buildSpillCards(
     BuildContext context,
     WidgetRef ref,
-    String? selectedSpill,
+    List<Spill> spills,
+    String? selectedSpillId,
   ) {
-    // Sample spills for demonstration
-    final spills = [
-      {
-        'id': 'spill_1',
-        'title': 'Coffee Spot',
-        'description': 'Great new coffee place downtown',
-        'location': 'Downtown',
-      },
-      {
-        'id': 'spill_2',
-        'title': 'Park Trail',
-        'description': 'Beautiful walking trail with views',
-        'location': 'Mountain View',
-      },
-      {
-        'id': 'spill_3',
-        'title': 'Restaurant Review',
-        'description': 'Amazing sushi restaurant',
-        'location': 'Westside',
-      },
-    ];
-
     return spills.map((spill) {
-      final isSelected = selectedSpill == spill['id'];
+      final isSelected = selectedSpillId == spill.id;
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: GestureDetector(
-          onTap: () {
-            ref.read(selectedSpillProvider.notifier).state = spill['id'];
+          onTap: () async {
+            ref.read(selectedSpillIdProvider.notifier).state = spill.id;
+
+            final mapController = ref.read(mapControllerProvider);
+            if (mapController != null) {
+              await mapController.animateCamera(
+                CameraUpdate.newLatLng(
+                  LatLng(spill.lat, spill.lng),
+                ),
+              );
+            }
+
+            if (context.mounted) {
+              await showSpillDetailSheet(
+                context: context,
+                ref: ref,
+                spillId: spill.id,
+              );
+            }
           },
           child: Card(
             color: isSelected ? Colors.black : Colors.white,
@@ -87,25 +146,29 @@ class SpillFeed extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    spill['title']!,
+                    spill.message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: isSelected ? Colors.white : Colors.black,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    spill['description']!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: isSelected ? Colors.white70 : Colors.black87,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '📍 ${spill['location']!}',
+                    '📍 ${spill.lat.toStringAsFixed(4)}, ${spill.lng.toStringAsFixed(4)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: isSelected ? Colors.white60 : Colors.black54,
                         ),
                   ),
+                  if (spill.imageUrl != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Photo attached',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isSelected ? Colors.white60 : Colors.black54,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -113,27 +176,5 @@ class SpillFeed extends ConsumerWidget {
         ),
       );
     }).toList();
-  }
-
-  void _showNewSpillDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('New Spill'),
-          content: const Text('Add a new spill at a location on the map.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Create'),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

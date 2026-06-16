@@ -22,6 +22,7 @@ void main() {
               required initialTarget,
               required markers,
               required onMapCreated,
+              required onTap,
               required onLongPress,
             }) {
               return Container(
@@ -54,4 +55,3 @@ void main() {
     expect(pin.longitude, closeTo(-123.1207, 0.0001));
   });
 }
-

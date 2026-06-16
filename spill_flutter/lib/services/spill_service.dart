@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../config/spill_config.dart';
+import '../models/spill_models.dart';
 
 class SpillService {
   SpillService({
@@ -49,7 +50,7 @@ class SpillService {
     return storageRef.getDownloadURL();
   }
 
-  Future<void> createSpill({
+  Future<Spill> createSpill({
     required double lat,
     required double lng,
     required String message,
@@ -85,5 +86,42 @@ class SpillService {
     if (response.statusCode >= 400) {
       throw Exception('Failed to create spill: ${response.body}');
     }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return Spill.fromBackendJson(body);
+  }
+
+  Future<SpillComment> addComment({
+    required String spillId,
+    required String message,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User must be signed in to comment.');
+    }
+
+    final idToken = await user.getIdToken();
+    if (idToken == null || idToken.isEmpty) {
+      throw Exception('Could not obtain Firebase ID token.');
+    }
+
+    final uri = Uri.parse('${SpillConfig.backendBaseUrl}/spill/$spillId/comments');
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': ['Bearer', idToken].join(' '),
+      },
+      body: jsonEncode({
+        'message': message,
+      }),
+    );
+
+    if (response.statusCode >= 400) {
+      throw Exception('Failed to add comment: ${response.body}');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return SpillComment.fromBackendJson(body);
   }
 }

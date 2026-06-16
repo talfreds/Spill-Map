@@ -6,7 +6,12 @@ from fastapi import APIRouter, HTTPException, Request
 from firebase_admin.firestore import SERVER_TIMESTAMP
 
 from ..firebase import get_firestore_client
-from ..models import CreateSpillRequest, SpillResponse
+from ..models import (
+    CreateSpillCommentRequest,
+    CreateSpillRequest,
+    SpillCommentResponse,
+    SpillResponse,
+)
 
 router = APIRouter(prefix="/spill", tags=["spill"])
 
@@ -16,9 +21,7 @@ SPILL_COMMENTS_COLLECTION = "spill_comments"
 
 @router.post("/create", response_model=SpillResponse)
 async def create_spill(payload: CreateSpillRequest, request: Request) -> SpillResponse:
-    user_id = getattr(request.state, "user_id", None)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthenticated request")
+    user_id = _require_user_id(request)
 
     db = get_firestore_client()
     spill_ref = db.collection(SPILLS_COLLECTION).document()
@@ -43,3 +46,44 @@ async def create_spill(payload: CreateSpillRequest, request: Request) -> SpillRe
         image_url=payload.image_url,
         timestamp=datetime.now(tz=UTC),
     )
+
+
+@router.post("/{spill_id}/comments", response_model=SpillCommentResponse)
+async def create_spill_comment(
+    spill_id: str,
+    payload: CreateSpillCommentRequest,
+    request: Request,
+) -> SpillCommentResponse:
+    user_id = _require_user_id(request)
+
+    db = get_firestore_client()
+    spill_ref = db.collection(SPILLS_COLLECTION).document(spill_id)
+
+    if not spill_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Spill not found")
+
+    comment_ref = db.collection(SPILL_COMMENTS_COLLECTION).document()
+    comment_ref.set(
+        {
+            "spill_id": spill_id,
+            "user_id": user_id,
+            "message": payload.message,
+            "timestamp": SERVER_TIMESTAMP,
+        }
+    )
+
+    return SpillCommentResponse(
+        comment_id=comment_ref.id,
+        spill_id=spill_id,
+        user_id=user_id,
+        message=payload.message,
+        timestamp=datetime.now(tz=UTC),
+    )
+
+
+def _require_user_id(request: Request) -> str:
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthenticated request")
+
+    return user_id

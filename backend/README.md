@@ -35,6 +35,11 @@ Collection: `spill_comments`
 - `message`: string
 - `timestamp`: server timestamp
 
+## Write endpoints
+
+- `POST /spill/create`
+- `POST /spill/{spill_id}/comments`
+
 ## Docker (ARM64 OCI)
 
 Build ARM64 image for OCI Ampere:

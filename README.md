@@ -83,6 +83,14 @@ Write requests require a Firebase ID token:
 Authorization: Bearer <firebase-id-token>
 ```
 
+Comment writes use `POST /spill/{spill_id}/comments` with payload:
+
+```json
+{
+  "message": "Saw this too"
+}
+```
+
 ### Firestore collections
 
 - `spills`: `lat`, `lng`, `user_id`, `timestamp`, `message`, `image_url`
@@ -102,6 +110,9 @@ The map long-press flow now supports:
 - selecting a photo from gallery (`image_picker`)
 - uploading the photo to Firebase Storage
 - attaching the uploaded public URL to the spill payload before calling `POST /spill/create`
+- immediately rendering the new spill marker from the create response while Firestore listeners stay reactive
+- opening a spill detail sheet from the map or feed with the original post and real-time comments
+- submitting comments through the backend while the Firestore-backed comment list updates live
 
 For web runtime initialization, pass Firebase values as `--dart-define` values:
 

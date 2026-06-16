@@ -20,3 +20,15 @@ class SpillResponse(BaseModel):
     message: str
     image_url: str | None = None
     timestamp: datetime | None
+
+
+class CreateSpillCommentRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class SpillCommentResponse(BaseModel):
+    comment_id: str
+    spill_id: str
+    user_id: str
+    message: str
+    timestamp: datetime | None
