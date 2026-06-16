@@ -4,8 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TOOLS_DIR="$ROOT_DIR/.tooling"
 SDK_DIR="$TOOLS_DIR/flutter"
+FLUTTER_VERSION="3.44.2"
 ARCHIVE="$TOOLS_DIR/flutter_linux_stable.tar.xz"
-URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.5-stable.tar.xz"
+URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
 
 mkdir -p "$TOOLS_DIR"
 
@@ -15,7 +16,7 @@ if [[ -x "$SDK_DIR/bin/flutter" ]]; then
   exit 0
 fi
 
-echo "Downloading Flutter SDK archive..."
+echo "Downloading Flutter SDK $FLUTTER_VERSION..."
 curl -fL "$URL" -o "$ARCHIVE"
 
 echo "Extracting Flutter SDK..."
