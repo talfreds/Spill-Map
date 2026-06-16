@@ -2,22 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-INDEX_PATH="$ROOT_DIR/spill_flutter/web/index.html"
-BACKUP_PATH="$ROOT_DIR/spill_flutter/web/index.html.bak"
 
-cleanup() {
-  if [[ -f "$BACKUP_PATH" ]]; then
-    mv "$BACKUP_PATH" "$INDEX_PATH"
-  fi
-}
-
-trap cleanup EXIT
-
-cp "$INDEX_PATH" "$BACKUP_PATH"
-
-node --env-file-if-exists="$ROOT_DIR/.env" "$ROOT_DIR/scripts/prepare-flutter-web-env.js" --inject
-
-# Load environment and build --dart-define flags for Firebase and backend config
+# Load environment for --dart-define flags
 if [[ -f "$ROOT_DIR/.env" ]]; then
   set -a
   source "$ROOT_DIR/.env"

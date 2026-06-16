@@ -34,13 +34,84 @@ npm run flutter:pub:get
 npm run flutter:web:run
 ```
 
-Then open port `8080` in Codespaces preview.
+### Run backend + frontend together in dev
+
+```bash
+npm run dev
+```
+
+Runs both backend (port `8000`) and Flutter web (port `8080`) concurrently with labelled output.
 
 ### Flutter test command
 
 ```bash
 npm run flutter:test
 ```
+
+## Backend (FastAPI + Firestore)
+
+FastAPI backend code is in `backend`.
+
+**Environment requirement**: set `FIREBASE_SERVICE_ACCOUNT_PATH` in `.env` to the path of your Firebase service account JSON key for Firestore writes and token verification.
+
+### One-time setup
+
+```bash
+npm run backend:install
+```
+
+### Run API locally
+
+```bash
+npm run backend:run
+```
+
+The API provides `POST /spill/create` with payload:
+
+```json
+{
+  "lat": 49.2827,
+  "lng": -123.1207,
+  "message": "Oil sheen near the seawall",
+  "image_url": "https://..."
+}
+```
+
+Write requests require a Firebase ID token:
+
+```text
+Authorization: Bearer <firebase-id-token>
+```
+
+### Firestore collections
+
+- `spills`: `lat`, `lng`, `user_id`, `timestamp`, `message`, `image_url`
+- `spill_comments`: `spill_id`, `user_id`, `message`, `timestamp`
+
+### Build ARM64 image for OCI Ampere
+
+```bash
+npm run backend:docker:arm64
+```
+
+## Stage 4 social flow (Flutter)
+
+The map long-press flow now supports:
+
+- entering a spill message
+- selecting a photo from gallery (`image_picker`)
+- uploading the photo to Firebase Storage
+- attaching the uploaded public URL to the spill payload before calling `POST /spill/create`
+
+For web runtime initialization, pass Firebase values as `--dart-define` values:
+
+- `FIREBASE_API_KEY`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_STORAGE_BUCKET`
+- `BACKEND_BASE_URL`
 
 ### Maps key behavior
 

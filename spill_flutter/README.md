@@ -22,6 +22,29 @@ All platforms (Web, Android, iOS) use `String.fromEnvironment('MAPS_API_KEY')` t
 
 The key should be enabled for Maps SDK for Android, Maps SDK for iOS, Maps JavaScript API, and Places API.
 
+## Social spill flow
+
+Long-press on the map now opens a spill sheet that:
+
+1. accepts a message,
+2. optionally picks an image from gallery via `image_picker`,
+3. uploads that image to Firebase Storage,
+4. sends `lat`, `lng`, `message`, and `image_url` to backend endpoint `/spill/create`.
+
+The request includes `Authorization: Bearer <Firebase ID token>`.
+
+## Required `--dart-define` values (web)
+
+The app initializes Firebase on web with runtime defines:
+
+- `FIREBASE_API_KEY`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_STORAGE_BUCKET`
+- `BACKEND_BASE_URL`
+
 TODO before production:
 - Use dedicated `prod` key separate from development.
 - Apply HTTP referrer restrictions for web domains.

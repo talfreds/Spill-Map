@@ -12,4 +12,10 @@ class SpillConfig {
   /// Google Maps API key for all platforms (Web, Android, iOS).
   /// Injected from environment variable MAPS_API_KEY at build time.
   static const String mapsApiKey = String.fromEnvironment('MAPS_API_KEY');
+
+  /// Base URL for the FastAPI backend.
+  static const String backendBaseUrl = String.fromEnvironment(
+    'BACKEND_BASE_URL',
+    defaultValue: 'http://localhost:8000',
+  );
 }

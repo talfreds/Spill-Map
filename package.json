@@ -13,6 +13,10 @@
     "flutter:android:run": "bash scripts/flutter-android-run.sh",
     "flutter:ios:run": "bash scripts/flutter-ios-run.sh",
     "flutter:test": "cd spill_flutter && ../.tooling/flutter/bin/flutter test",
+    "backend:install": "python3 -m venv .venv-backend && . .venv-backend/bin/activate && pip install -r backend/requirements.txt",
+    "backend:run": ". .venv-backend/bin/activate && uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload",
+    "backend:docker:arm64": "docker buildx build --platform linux/arm64 -t spill-backend:arm64 backend",
+    "dev": "bash scripts/dev.sh",
     "flutter:android:setup": "cd spill_flutter && ../.tooling/flutter/bin/flutter create --platforms=android . && echo 'Android platform added. Update android/app/src/main/AndroidManifest.xml with: <meta-data android:name=\"com.google.android.geo.API_KEY\" android:value=\"${GOOGLE_API_KEY}\" />'",
     "flutter:ios:setup": "cd spill_flutter && ../.tooling/flutter/bin/flutter create --platforms=ios . && echo 'iOS platform added. Add MAPS_API_KEY=\\${GOOGLE_API_KEY} to ios/Runner/GeneratedPluginRegistrant.m during build'"
   },
@@ -33,5 +37,8 @@
   "homepage": "https://github.com/talfreds/Spill-Map#readme",
   "dependencies": {
     "firebase": "^12.14.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../services/spill_service.dart';
 import '../state/map_state.dart';
 
 typedef SpillMapBuilder = Widget Function({
@@ -83,25 +84,141 @@ class SpillMapScreen extends ConsumerWidget {
   }
 
   Future<void> _showSpillSheet(BuildContext context, LatLng point) {
-    final text =
-        'Spilling a thought at [${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}]';
+    final messageController = TextEditingController();
+    final spillService = SpillService();
+    String? imageUrl;
+    bool isUploadingPhoto = false;
+    bool isSubmitting = false;
 
     return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
         side: BorderSide(color: Colors.black, width: 2),
       ),
       builder: (context) {
-        return Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> pickPhoto() async {
+              setModalState(() {
+                isUploadingPhoto = true;
+              });
+
+              try {
+                final uploadedUrl = await spillService.pickAndUploadPhoto();
+                setModalState(() {
+                  imageUrl = uploadedUrl;
+                });
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Photo upload failed: $error')),
+                  );
+                }
+              } finally {
+                setModalState(() {
+                  isUploadingPhoto = false;
+                });
+              }
+            }
+
+            Future<void> submitSpill() async {
+              final message = messageController.text.trim();
+              if (message.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Message is required.')),
+                );
+                return;
+              }
+
+              setModalState(() {
+                isSubmitting = true;
+              });
+
+              try {
+                await spillService.createSpill(
+                  lat: point.latitude,
+                  lng: point.longitude,
+                  message: message,
+                  imageUrl: imageUrl,
+                );
+
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Spill posted.')),
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Create spill failed: $error')),
+                  );
+                }
+              } finally {
+                setModalState(() {
+                  isSubmitting = false;
+                });
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'New spill at ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: messageController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Message',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: isUploadingPhoto || isSubmitting ? null : pickPhoto,
+                        icon: const Icon(Icons.photo_library),
+                        label: Text(isUploadingPhoto ? 'Uploading...' : 'Add Photo'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          imageUrl == null ? 'No photo attached' : 'Photo attached',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: isSubmitting || isUploadingPhoto ? null : submitSpill,
+                      child: Text(isSubmitting ? 'Posting...' : 'Post Spill'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
-    );
+    ).whenComplete(messageController.dispose);
   }
 }

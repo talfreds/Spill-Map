@@ -8,3 +8,6 @@ spill_flutter/.flutter-plugins
 spill_flutter/.flutter-plugins-dependencies
 spill_flutter/.packages
 spill_flutter/android/
+.venv-backend/
+__pycache__/
+*.pyc

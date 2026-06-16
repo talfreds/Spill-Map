@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+import 'config/firebase_runtime_config.dart';
 import 'screens/spill_dashboard.dart';
 import 'theme/spill_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: FirebaseRuntimeConfig.options);
+
   runApp(const ProviderScope(child: SpillApp()));
 }
 
