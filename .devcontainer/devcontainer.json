@@ -4,13 +4,9 @@
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
-    },
-    "ghcr.io/devcontainers/features/flutter:1": {
-      "version": "3.41.9"
     }
   },
   "forwardPorts": [8080],
-  "postCreateCommand": "npm install",
   "customizations": {
     "vscode": {
       "extensions": [
