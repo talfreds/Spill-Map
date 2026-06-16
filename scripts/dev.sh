@@ -15,6 +15,12 @@ cleanup() {
 
 trap cleanup EXIT
 
+# ── 0. Root dependencies ──────────────────────────────────────────────────────
+if [[ ! -d "$ROOT_DIR/node_modules" ]]; then
+  echo "Root dependencies not found — installing..."
+  npm --prefix "$ROOT_DIR" install --yes
+fi
+
 # ── 1. Flutter SDK ────────────────────────────────────────────────────────────
 if [[ ! -x "$FLUTTER" ]]; then
   echo "Flutter SDK not found — installing..."
@@ -30,6 +36,12 @@ if [[ ! -f "$PKG_CONFIG" ]] || [[ "$PUBSPEC" -nt "$PKG_CONFIG" ]]; then
 fi
 
 # ── 3. Backend Python virtualenv + pip dependencies ──────────────────────────
+# Ensure python3-venv is installed
+if ! python3 -m venv --help &>/dev/null; then
+  echo "python3-venv not found — installing..."
+  sudo apt-get update && sudo apt-get install -y python3-venv
+fi
+
 VENV="$ROOT_DIR/.venv-backend"
 REQUIREMENTS="$ROOT_DIR/backend/requirements.txt"
 VENV_STAMP="$VENV/.installed.stamp"

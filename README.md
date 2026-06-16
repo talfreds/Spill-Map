@@ -1,15 +1,11 @@
 # Spill-Map
 
-PinChat phase 1 in this repository is limited to Firebase/GCP bootstrapping for authentication.
+A Flutter/FastAPI stack for mapping and sharing environmental spills. 
 
-This repository now also includes a Flutter frontend shell in `spill_flutter` for web preview in Codespaces and future native mobile builds.
+- **Backend**: FastAPI with Firebase admin SDK integration for Firestore data storage and Firebase token verification
+- **Frontend**: Flutter shell targeting web (Codespaces preview) and native mobile (Android/iOS)
 
 ## Files added
-
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/config.js` – Firebase web app config loader
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/app.js` – idempotent Firebase app initialization
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/auth.js` – Google Sign-In provider plus email/password auth helpers
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/scripts/validate-auth.js` – email/password auth validation script that retrieves a Firebase ID token
 
 ## Install
 
@@ -64,6 +60,12 @@ npm run backend:install
 
 ```bash
 npm run backend:run
+```
+
+### Run backend tests
+
+```bash
+npm run backend:test
 ```
 
 The API provides `POST /spill/create` with payload:
