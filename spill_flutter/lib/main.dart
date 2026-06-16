@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'screens/spill_map_screen.dart';
+import 'screens/spill_dashboard.dart';
 import 'theme/spill_theme.dart';
 
 void main() {
@@ -17,7 +17,7 @@ class SpillApp extends StatelessWidget {
       title: 'Spill',
       theme: SpillTheme.light(),
       debugShowCheckedModeBanner: false,
-      home: const SpillMapScreen(),
+      home: const SpillDashboard(),
     );
   }
 }

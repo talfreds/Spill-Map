@@ -24,12 +24,17 @@ void main() {
               required onMapCreated,
               required onLongPress,
             }) {
-              return GestureDetector(
-                key: const Key('fake-map'),
-                onLongPress: () {
-                  onLongPress(const LatLng(49.2827, -123.1207));
-                },
-                child: const SizedBox.expand(),
+              return Container(
+                color: Colors.white,
+                child: GestureDetector(
+                  key: const Key('fake-map'),
+                  onLongPress: () {
+                    onLongPress(const LatLng(49.2827, -123.1207));
+                  },
+                  child: const Center(
+                    child: Text('Map'),
+                  ),
+                ),
               );
             },
           ),
@@ -49,3 +54,4 @@ void main() {
     expect(pin.longitude, closeTo(-123.1207, 0.0001));
   });
 }
+

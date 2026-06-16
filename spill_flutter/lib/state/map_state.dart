@@ -20,3 +20,9 @@ class PinStateNotifier extends StateNotifier<LatLng?> {
 final pinStateProvider = StateNotifierProvider<PinStateNotifier, LatLng?>((ref) {
   return PinStateNotifier();
 });
+
+/// Provider for the currently selected spill or search state.
+/// Stores the ID of the selected spill, or null if none is selected.
+final selectedSpillProvider = StateProvider<String?>((ref) {
+  return null;
+});

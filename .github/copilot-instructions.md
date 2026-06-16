@@ -37,6 +37,17 @@
 - spill_flutter/web/index.html must keep the __MAPS_API_KEY__ placeholder in git.
 - scripts/flutter-web-run.sh injects GOOGLE_API_KEY at runtime and restores the placeholder on exit.
 - Use Riverpod providers for map and pin state updates.
+- **API Key Configuration**: Use `String.fromEnvironment('MAPS_API_KEY')` in Dart for all platforms (Web, Android, iOS).
+  - Web: Injected by prepare-flutter-web-env.js script into index.html
+  - Android: Add to AndroidManifest.xml after running `npm run flutter:android:setup`
+  - iOS: Add to build configuration after running `npm run flutter:ios:setup`
+
+## Dashboard UI
+
+- SpillDashboard: Main layout widget with 30% feed (left) and 70% map (right) on desktop
+- SpillFeed: Scrollable list of spill cards with floating action button for "New Spill"
+- Uses ArchivoBlack font for headings and SpaceMono for body text
+- Responsive: Stacks vertically on mobile, splits horizontally on desktop (≥800px width)
 
 ## Testing expectations
 

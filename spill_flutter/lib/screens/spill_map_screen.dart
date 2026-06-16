@@ -16,10 +16,15 @@ class SpillMapScreen extends ConsumerWidget {
     super.key,
     this.mapBuilder,
     this.onPinDropped,
+    this.fullScreen = false,
   });
 
   final SpillMapBuilder? mapBuilder;
   final Future<void> Function(BuildContext context, LatLng point)? onPinDropped;
+  
+  /// If true, returns just the map widget without Scaffold for use in dashboards.
+  /// If false, returns full screen with Scaffold.
+  final bool fullScreen;
 
   static const LatLng _vancouver = LatLng(49.2827, -123.1207);
 
@@ -36,19 +41,25 @@ class SpillMapScreen extends ConsumerWidget {
 
     final builder = mapBuilder ?? _defaultMapBuilder;
 
+    final mapWidget = builder(
+      initialTarget: _vancouver,
+      markers: markers,
+      onMapCreated: (controller) {
+        ref.read(mapControllerProvider.notifier).state = controller;
+      },
+      onLongPress: (latLng) async {
+        ref.read(pinStateProvider.notifier).setPin(latLng);
+        final showSheet = onPinDropped ?? _showSpillSheet;
+        await showSheet(context, latLng);
+      },
+    );
+
+    if (fullScreen) {
+      return mapWidget;
+    }
+
     return Scaffold(
-      body: builder(
-        initialTarget: _vancouver,
-        markers: markers,
-        onMapCreated: (controller) {
-          ref.read(mapControllerProvider.notifier).state = controller;
-        },
-        onLongPress: (latLng) async {
-          ref.read(pinStateProvider.notifier).setPin(latLng);
-          final showSheet = onPinDropped ?? _showSpillSheet;
-          await showSheet(context, latLng);
-        },
-      ),
+      body: mapWidget,
     );
   }
 

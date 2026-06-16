@@ -10,7 +10,11 @@
     "flutter:web:prepare-env": "node --env-file-if-exists=.env scripts/prepare-flutter-web-env.js",
     "flutter:pub:get": "cd spill_flutter && ../.tooling/flutter/bin/flutter pub get",
     "flutter:web:run": "bash scripts/flutter-web-run.sh",
-    "flutter:test": "cd spill_flutter && ../.tooling/flutter/bin/flutter test"
+    "flutter:android:run": "bash scripts/flutter-android-run.sh",
+    "flutter:ios:run": "bash scripts/flutter-ios-run.sh",
+    "flutter:test": "cd spill_flutter && ../.tooling/flutter/bin/flutter test",
+    "flutter:android:setup": "cd spill_flutter && ../.tooling/flutter/bin/flutter create --platforms=android . && echo 'Android platform added. Update android/app/src/main/AndroidManifest.xml with: <meta-data android:name=\"com.google.android.geo.API_KEY\" android:value=\"${GOOGLE_API_KEY}\" />'",
+    "flutter:ios:setup": "cd spill_flutter && ../.tooling/flutter/bin/flutter create --platforms=ios . && echo 'iOS platform added. Add MAPS_API_KEY=\\${GOOGLE_API_KEY} to ios/Runner/GeneratedPluginRegistrant.m during build'"
   },
   "repository": {
     "type": "git",
