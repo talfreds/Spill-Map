@@ -9,14 +9,40 @@ from ..firebase import get_firestore_client
 from ..models import (
     CreateSpillCommentRequest,
     CreateSpillRequest,
+    CreateSpillUploadUrlRequest,
+    CreateSpillUploadUrlResponse,
     SpillCommentResponse,
     SpillResponse,
 )
+from ..object_storage import build_presigned_upload_for_user
 
 router = APIRouter(prefix="/spill", tags=["spill"])
 
 SPILLS_COLLECTION = "spills"
 SPILL_COMMENTS_COLLECTION = "spill_comments"
+
+
+@router.post("/upload-url", response_model=CreateSpillUploadUrlResponse)
+async def create_spill_upload_url(
+    payload: CreateSpillUploadUrlRequest,
+    request: Request,
+) -> CreateSpillUploadUrlResponse:
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sign in required to upload photos")
+
+    upload = build_presigned_upload_for_user(
+        user_id=user_id,
+        file_name=payload.file_name,
+        content_type=payload.content_type,
+    )
+
+    return CreateSpillUploadUrlResponse(
+        upload_url=upload.upload_url,
+        public_url=upload.public_url,
+        object_key=upload.object_key,
+        expires_in_seconds=upload.expires_in_seconds,
+    )
 
 
 @router.post("/create", response_model=SpillResponse)

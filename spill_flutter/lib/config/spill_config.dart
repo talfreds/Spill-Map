@@ -3,13 +3,12 @@ import 'dart:html' as html;
 
 /// Configuration for Spill Map application.
 /// 
-/// The API key is loaded from the environment at compile time using:
-/// ```
-/// const String apiKey = String.fromEnvironment('MAPS_API_KEY');
-/// ```
+/// Environment variables injected at build time:
+/// - MAPS_API_KEY: Google Maps API key
+/// - BACKEND_BASE_URL: (Optional) Explicit backend URL for production
 /// 
-/// This ensures the key is injected during the build process without
-/// hardcoding sensitive values in the source code.
+/// For development (Codespaces, localhost), the backend URL is auto-detected.
+/// For production, set BACKEND_BASE_URL explicitly.
 
 class SpillConfig {
   /// Google Maps API key for all platforms (Web, Android, iOS).
@@ -17,24 +16,34 @@ class SpillConfig {
   static const String mapsApiKey = String.fromEnvironment('MAPS_API_KEY');
 
   /// Base URL for the FastAPI backend.
-  /// Auto-detects for web (maps app port to backend port on same domain).
-  /// Falls back to localhost:8000 for other platforms or local development.
+  /// 
+  /// Resolution order:
+  /// 1. Explicit BACKEND_BASE_URL env var (for production)
+  /// 2. Auto-detect from current hostname (for Codespaces/localhost dev)
+  /// 3. Default to localhost:8000 (local mobile/desktop dev)
   static String get backendBaseUrl {
+    // Check for explicit production URL
+    const explicitUrl = String.fromEnvironment('BACKEND_BASE_URL', defaultValue: '');
+    if (explicitUrl.isNotEmpty) {
+      return explicitUrl;
+    }
+    
+    // Auto-detect for web development
     if (kIsWeb) {
       final hostname = html.window.location.hostname ?? 'localhost';
       final protocol = html.window.location.protocol.replaceAll(':', '');
       
-      // For Codespaces: fluffy-space-chainsaw-x9rr4gpqw75f6qqr-8080.app.github.dev
-      // becomes fluffy-space-chainsaw-x9rr4gpqw75f6qqr-8000.app.github.dev
+      // For GitHub Codespaces: fluffy-space-chainsaw-x9rr4gpqw75f6qqr-8080.app.github.dev
+      // maps to fluffy-space-chainsaw-x9rr4gpqw75f6qqr-8000.app.github.dev
       if (hostname.contains('.app.github.dev')) {
         return '$protocol://${hostname.replaceAll('-8080.', '-8000.')}'; 
       }
       
-      // Local development
+      // Local web development
       return '$protocol://localhost:8000';
     }
     
-    // Mobile platforms default to localhost
+    // Mobile/desktop platforms default to localhost
     return 'http://localhost:8000';
   }
 }

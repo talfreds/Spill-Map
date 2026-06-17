@@ -116,7 +116,7 @@ The map long-press flow now supports:
 - entering a spill message
 - posting the spill anonymously when no user is signed in
 - selecting a photo from gallery (`image_picker`) when signed in
-- uploading the photo to Firebase Storage when signed in
+- uploading the photo to OCI Object Storage (S3-compatible API) through backend-issued presigned URLs when signed in
 - attaching the uploaded public URL to the spill payload before calling `POST /spill/create`
 - immediately rendering the new spill marker from the create response while Firestore listeners stay reactive
 - opening a spill detail sheet from the map or feed with the original post and real-time comments
@@ -133,6 +133,24 @@ For web runtime initialization, pass Firebase values as `--dart-define` values:
 - `FIREBASE_AUTH_DOMAIN`
 - `FIREBASE_STORAGE_BUCKET`
 - `BACKEND_BASE_URL`
+
+### OCI Object Storage setup for image uploads
+
+The app uploads images directly from Flutter to OCI Object Storage using presigned `PUT` URLs returned by `POST /spill/upload-url`.
+
+Set these env vars in root `.env`:
+
+- `OCI_OBJECT_STORAGE_NAMESPACE`
+- `OCI_OBJECT_STORAGE_BUCKET`
+- `OCI_OBJECT_STORAGE_REGION`
+- `OCI_OBJECT_STORAGE_ACCESS_KEY`
+- `OCI_OBJECT_STORAGE_SECRET_KEY`
+
+Optional:
+
+- `OCI_OBJECT_STORAGE_PUBLIC_BASE_URL` (if using a custom public domain for objects)
+
+For OCI free tier, create a bucket and a Customer Secret Key, then configure these values.
 
 ### Maps key behavior
 
