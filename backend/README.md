@@ -11,13 +11,18 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ## Firebase auth middleware
 
-All write requests (`POST`, `PUT`, `PATCH`, `DELETE`) require a Firebase ID token in:
+All write requests (`POST`, `PUT`, `PATCH`, `DELETE`) support two modes:
+
+- guest writes with no `Authorization` header, which are attributed to a stable `anonymous-<hash>` ID derived from the client IP,
+- authenticated writes with a Firebase ID token in:
 
 ```text
 Authorization: Bearer <firebase-id-token>
 ```
 
-The middleware verifies the token using `firebase-admin` and stores `uid` in `request.state.user_id`.
+When the header is present, the middleware verifies the token using `firebase-admin` and stores `uid` in `request.state.user_id`.
+
+Anonymous ID generation uses `ANONYMOUS_USER_SALT` when set and falls back to `spill-anon`.
 
 ## Firestore schema
 
@@ -34,6 +39,11 @@ Collection: `spill_comments`
 - `user_id`: string
 - `message`: string
 - `timestamp`: server timestamp
+
+## Write endpoints
+
+- `POST /spill/create`
+- `POST /spill/{spill_id}/comments`
 
 ## Docker (ARM64 OCI)
 

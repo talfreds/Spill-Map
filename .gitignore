@@ -11,3 +11,5 @@ spill_flutter/android/
 .venv-backend/
 __pycache__/
 *.pyc
+firebase-service-account.json
+*firebase*service*account*.json

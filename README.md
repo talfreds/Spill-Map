@@ -1,15 +1,11 @@
 # Spill-Map
 
-PinChat phase 1 in this repository is limited to Firebase/GCP bootstrapping for authentication.
+A Flutter/FastAPI stack for mapping and sharing environmental spills. 
 
-This repository now also includes a Flutter frontend shell in `spill_flutter` for web preview in Codespaces and future native mobile builds.
+- **Backend**: FastAPI with Firebase admin SDK integration for Firestore data storage and Firebase token verification
+- **Frontend**: Flutter shell targeting web (Codespaces preview) and native mobile (Android/iOS)
 
 ## Files added
-
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/config.js` – Firebase web app config loader
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/app.js` – idempotent Firebase app initialization
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/src/firebase/auth.js` – Google Sign-In provider plus email/password auth helpers
-- `/home/runner/work/Spill-Map/Spill-Map/talfreds/Spill-Map/scripts/validate-auth.js` – email/password auth validation script that retrieves a Firebase ID token
 
 ## Install
 
@@ -66,6 +62,12 @@ npm run backend:install
 npm run backend:run
 ```
 
+### Run backend tests
+
+```bash
+npm run backend:test
+```
+
 The API provides `POST /spill/create` with payload:
 
 ```json
@@ -77,10 +79,23 @@ The API provides `POST /spill/create` with payload:
 }
 ```
 
-Write requests require a Firebase ID token:
+Write requests accept either:
+
+- no `Authorization` header, in which case the backend attributes the write to a stable anonymous ID derived from the client IP, or
+- a Firebase ID token, in which case the write is attributed to the authenticated Firebase user.
+
+When provided, the auth header is:
 
 ```text
 Authorization: Bearer <firebase-id-token>
+```
+
+Comment writes use `POST /spill/{spill_id}/comments` with payload:
+
+```json
+{
+  "message": "Saw this too"
+}
 ```
 
 ### Firestore collections
@@ -99,9 +114,15 @@ npm run backend:docker:arm64
 The map long-press flow now supports:
 
 - entering a spill message
-- selecting a photo from gallery (`image_picker`)
-- uploading the photo to Firebase Storage
+- posting the spill anonymously when no user is signed in
+- selecting a photo from gallery (`image_picker`) when signed in
+- uploading the photo to OCI Object Storage (S3-compatible API) through backend-issued presigned URLs when signed in
 - attaching the uploaded public URL to the spill payload before calling `POST /spill/create`
+- immediately rendering the new spill marker from the create response while Firestore listeners stay reactive
+- opening a spill detail sheet from the map or feed with the original post and real-time comments
+- submitting comments through the backend as either an authenticated user or a stable anonymous identity while the Firestore-backed comment list updates live
+
+Anonymous writes store a `user_id` shaped like `anonymous-<hash>`. The UI renders that as `Anonymous #XXXXXX`.
 
 For web runtime initialization, pass Firebase values as `--dart-define` values:
 
@@ -112,6 +133,24 @@ For web runtime initialization, pass Firebase values as `--dart-define` values:
 - `FIREBASE_AUTH_DOMAIN`
 - `FIREBASE_STORAGE_BUCKET`
 - `BACKEND_BASE_URL`
+
+### OCI Object Storage setup for image uploads
+
+The app uploads images directly from Flutter to OCI Object Storage using presigned `PUT` URLs returned by `POST /spill/upload-url`.
+
+Set these env vars in root `.env`:
+
+- `OCI_OBJECT_STORAGE_NAMESPACE`
+- `OCI_OBJECT_STORAGE_BUCKET`
+- `OCI_OBJECT_STORAGE_REGION`
+- `OCI_OBJECT_STORAGE_ACCESS_KEY`
+- `OCI_OBJECT_STORAGE_SECRET_KEY`
+
+Optional:
+
+- `OCI_OBJECT_STORAGE_PUBLIC_BASE_URL` (if using a custom public domain for objects)
+
+For OCI free tier, create a bucket and a Customer Secret Key, then configure these values.
 
 ### Maps key behavior
 

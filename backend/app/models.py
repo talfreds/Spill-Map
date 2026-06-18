@@ -20,3 +20,29 @@ class SpillResponse(BaseModel):
     message: str
     image_url: str | None = None
     timestamp: datetime | None
+
+
+class CreateSpillCommentRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class SpillCommentResponse(BaseModel):
+    comment_id: str
+    spill_id: str
+    user_id: str
+    message: str
+    timestamp: datetime | None
+
+
+class CreateSpillUploadUrlRequest(BaseModel):
+    file_name: str = Field(min_length=1, max_length=255)
+    content_type: str = Field(min_length=1, max_length=120)
+
+
+class CreateSpillUploadUrlResponse(BaseModel):
+    upload_url: str
+    public_url: str
+    object_key: str
+    method: str = "PUT"
+    headers: dict[str, str] = Field(default_factory=dict)
+    expires_in_seconds: int

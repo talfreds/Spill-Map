@@ -31,8 +31,8 @@ class SpillDashboard extends ConsumerWidget {
           color: Colors.black,
         ),
         // GoogleMap - 70% width
-        Expanded(
-          child: const SpillMapScreen(
+        const Expanded(
+          child: SpillMapScreen(
             fullScreen: true,
           ),
         ),

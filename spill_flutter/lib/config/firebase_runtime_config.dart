@@ -7,13 +7,13 @@ class FirebaseRuntimeConfig {
       return null;
     }
 
-    return FirebaseOptions(
-      apiKey: const String.fromEnvironment('FIREBASE_API_KEY'),
-      appId: const String.fromEnvironment('FIREBASE_APP_ID'),
-      messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-      projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID'),
-      authDomain: const String.fromEnvironment('FIREBASE_AUTH_DOMAIN'),
-      storageBucket: const String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+    return const FirebaseOptions(
+      apiKey: String.fromEnvironment('FIREBASE_API_KEY'),
+      appId: String.fromEnvironment('FIREBASE_APP_ID'),
+      messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+      projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+      authDomain: String.fromEnvironment('FIREBASE_AUTH_DOMAIN'),
+      storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
     );
   }
 }

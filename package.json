@@ -4,8 +4,6 @@
   "description": "PinChat Firebase authentication bootstrap",
   "type": "module",
   "scripts": {
-    "test": "node --test",
-    "validate:auth": "node --env-file-if-exists=.env scripts/validate-auth.js",
     "flutter:install": "bash scripts/install-flutter.sh",
     "flutter:web:prepare-env": "node --env-file-if-exists=.env scripts/prepare-flutter-web-env.js",
     "flutter:pub:get": "cd spill_flutter && ../.tooling/flutter/bin/flutter pub get",
@@ -15,6 +13,7 @@
     "flutter:test": "cd spill_flutter && ../.tooling/flutter/bin/flutter test",
     "backend:install": "python3 -m venv .venv-backend && . .venv-backend/bin/activate && pip install -r backend/requirements.txt",
     "backend:run": ". .venv-backend/bin/activate && uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload",
+    "backend:test": ". .venv-backend/bin/activate && pip install -q -r backend/requirements-dev.txt && python -m pytest backend/tests/ -v",
     "backend:docker:arm64": "docker buildx build --platform linux/arm64 -t spill-backend:arm64 backend",
     "dev": "bash scripts/dev.sh",
     "flutter:android:setup": "cd spill_flutter && ../.tooling/flutter/bin/flutter create --platforms=android . && echo 'Android platform added. Update android/app/src/main/AndroidManifest.xml with: <meta-data android:name=\"com.google.android.geo.API_KEY\" android:value=\"${GOOGLE_API_KEY}\" />'",
@@ -26,8 +25,7 @@
   },
   "keywords": [
     "firebase",
-    "authentication",
-    "pinchat"
+    "authentication"
   ],
   "author": "",
   "license": "ISC",
@@ -35,9 +33,7 @@
     "url": "https://github.com/talfreds/Spill-Map/issues"
   },
   "homepage": "https://github.com/talfreds/Spill-Map#readme",
-  "dependencies": {
-    "firebase": "^12.14.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "concurrently": "^10.0.3"
   }

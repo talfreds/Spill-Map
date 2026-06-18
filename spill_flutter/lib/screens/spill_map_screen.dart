@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../services/spill_service.dart';
+import '../models/spill_models.dart';
 import '../state/map_state.dart';
+import '../widgets/auth_sheet.dart';
+import '../widgets/spill_sheets.dart';
 
 typedef SpillMapBuilder = Widget Function({
   required LatLng initialTarget,
   required Set<Marker> markers,
   required void Function(GoogleMapController controller) onMapCreated,
+  required void Function(LatLng latLng) onTap,
   required void Function(LatLng latLng) onLongPress,
+  required bool gesturesEnabled,
 });
 
 class SpillMapScreen extends ConsumerWidget {
@@ -22,7 +26,7 @@ class SpillMapScreen extends ConsumerWidget {
 
   final SpillMapBuilder? mapBuilder;
   final Future<void> Function(BuildContext context, LatLng point)? onPinDropped;
-  
+
   /// If true, returns just the map widget without Scaffold for use in dashboards.
   /// If false, returns full screen with Scaffold.
   final bool fullScreen;
@@ -32,27 +36,70 @@ class SpillMapScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pin = ref.watch(pinStateProvider);
+    final spills = ref.watch(spillsProvider);
+    final remoteSpills = ref.watch(remoteSpillsProvider);
+    final selectedSpillId = ref.watch(selectedSpillIdProvider);
+    final authState = ref.watch(authStateProvider);
+    final isNewSpillSheetOpen = ref.watch(newSpillSheetOpenProvider);
+
     final markers = <Marker>{
       if (pin != null)
         Marker(
           markerId: const MarkerId('temp-pin'),
           position: pin,
         ),
+      ..._buildSpillMarkers(
+        context: context,
+        ref: ref,
+        spills: spills.valueOrNull ?? const <Spill>[],
+        selectedSpillId: selectedSpillId,
+      ),
     };
 
     final builder = mapBuilder ?? _defaultMapBuilder;
-
-    final mapWidget = builder(
-      initialTarget: _vancouver,
-      markers: markers,
-      onMapCreated: (controller) {
-        ref.read(mapControllerProvider.notifier).state = controller;
-      },
-      onLongPress: (latLng) async {
-        ref.read(pinStateProvider.notifier).setPin(latLng);
-        final showSheet = onPinDropped ?? _showSpillSheet;
-        await showSheet(context, latLng);
-      },
+    final mapWidget = Stack(
+      children: [
+        builder(
+          initialTarget: _vancouver,
+          markers: markers,
+          onMapCreated: (controller) {
+            ref.read(mapControllerProvider.notifier).state = controller;
+          },
+          onTap: (latLng) async {
+            if (isNewSpillSheetOpen) {
+              return;
+            }
+            await _handlePointSelection(context, ref, latLng);
+          },
+          onLongPress: (latLng) async {
+            if (isNewSpillSheetOpen) {
+              return;
+            }
+            await _handlePointSelection(context, ref, latLng);
+          },
+          gesturesEnabled: !isNewSpillSheetOpen,
+        ),
+        Positioned(
+          top: 16,
+          left: 16,
+          child: _AuthStatusButton(
+            label: authState.valueOrNull?.email ?? 'Post as guest',
+            onPressed: () => showAuthSheet(context: context, ref: ref),
+          ),
+        ),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: remoteSpills.when(
+            data: (_) => const SizedBox.shrink(),
+            loading: () => const _MapStatusCard(label: 'Loading spills...'),
+            error: (error, _) => _MapStatusCard(
+              label: 'Could not load spills',
+              detail: error.toString(),
+            ),
+          ),
+        ),
+      ],
     );
 
     if (fullScreen) {
@@ -68,7 +115,9 @@ class SpillMapScreen extends ConsumerWidget {
     required LatLng initialTarget,
     required Set<Marker> markers,
     required void Function(GoogleMapController controller) onMapCreated,
+    required void Function(LatLng latLng) onTap,
     required void Function(LatLng latLng) onLongPress,
+    required bool gesturesEnabled,
   }) {
     return GoogleMap(
       initialCameraPosition: CameraPosition(
@@ -78,147 +127,142 @@ class SpillMapScreen extends ConsumerWidget {
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,
       markers: markers,
+      scrollGesturesEnabled: gesturesEnabled,
+      zoomGesturesEnabled: gesturesEnabled,
+      rotateGesturesEnabled: gesturesEnabled,
+      tiltGesturesEnabled: gesturesEnabled,
       onMapCreated: onMapCreated,
+      onTap: onTap,
       onLongPress: onLongPress,
     );
   }
 
-  Future<void> _showSpillSheet(BuildContext context, LatLng point) {
-    final messageController = TextEditingController();
-    final spillService = SpillService();
-    String? imageUrl;
-    bool isUploadingPhoto = false;
-    bool isSubmitting = false;
+  Set<Marker> _buildSpillMarkers({
+    required BuildContext context,
+    required WidgetRef ref,
+    required List<Spill> spills,
+    required String? selectedSpillId,
+  }) {
+    return spills
+        .map(
+          (spill) => Marker(
+            markerId: MarkerId(spill.id),
+            position: LatLng(spill.lat, spill.lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              selectedSpillId == spill.id
+                  ? BitmapDescriptor.hueAzure
+                  : BitmapDescriptor.hueRed,
+            ),
+            onTap: () {
+              showSpillDetailSheet(
+                context: context,
+                ref: ref,
+                spillId: spill.id,
+              );
+            },
+          ),
+        )
+        .toSet();
+  }
 
+  Future<void> _handlePointSelection(
+    BuildContext context,
+    WidgetRef ref,
+    LatLng point,
+  ) async {
+    if (ref.read(newSpillSheetOpenProvider)) {
+      return;
+    }
+
+    ref.read(newSpillSheetOpenProvider.notifier).state = true;
+    ref.read(pinStateProvider.notifier).setPin(point);
+
+    try {
+      final showSheet = onPinDropped ?? _showSpillSheet;
+      await showSheet(context, point);
+    } finally {
+      ref.read(newSpillSheetOpenProvider.notifier).state = false;
+      ref.read(pinStateProvider.notifier).clearPin();
+    }
+  }
+
+  Future<void> _showSpillSheet(BuildContext context, LatLng point) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(color: Colors.black, width: 2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            Future<void> pickPhoto() async {
-              setModalState(() {
-                isUploadingPhoto = true;
-              });
+      builder: (_) => NewSpillSheet(point: point),
+    );
+  }
+}
 
-              try {
-                final uploadedUrl = await spillService.pickAndUploadPhoto();
-                setModalState(() {
-                  imageUrl = uploadedUrl;
-                });
-              } catch (error) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Photo upload failed: $error')),
-                  );
-                }
-              } finally {
-                setModalState(() {
-                  isUploadingPhoto = false;
-                });
-              }
-            }
+class _AuthStatusButton extends StatelessWidget {
+  const _AuthStatusButton({
+    required this.label,
+    required this.onPressed,
+  });
 
-            Future<void> submitSpill() async {
-              final message = messageController.text.trim();
-              if (message.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Message is required.')),
-                );
-                return;
-              }
+  final String label;
+  final VoidCallback onPressed;
 
-              setModalState(() {
-                isSubmitting = true;
-              });
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(999),
+      child: FilledButton.tonalIcon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.person_outline),
+        label: Text(label),
+      ),
+    );
+  }
+}
 
-              try {
-                await spillService.createSpill(
-                  lat: point.latitude,
-                  lng: point.longitude,
-                  message: message,
-                  imageUrl: imageUrl,
-                );
+class _MapStatusCard extends StatelessWidget {
+  const _MapStatusCard({
+    required this.label,
+    this.detail,
+  });
 
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Spill posted.')),
-                  );
-                }
-              } catch (error) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Create spill failed: $error')),
-                  );
-                }
-              } finally {
-                setModalState(() {
-                  isSubmitting = false;
-                });
-              }
-            }
+  final String label;
+  final String? detail;
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'New spill at ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
-                    style: Theme.of(context).textTheme.titleMedium,
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.labelLarge),
+              if (detail != null) ...[
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: 220,
+                  child: Text(
+                    detail!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: messageController,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Message',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: isUploadingPhoto || isSubmitting ? null : pickPhoto,
-                        icon: const Icon(Icons.photo_library),
-                        label: Text(isUploadingPhoto ? 'Uploading...' : 'Add Photo'),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          imageUrl == null ? 'No photo attached' : 'Photo attached',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: isSubmitting || isUploadingPhoto ? null : submitSpill,
-                      child: Text(isSubmitting ? 'Posting...' : 'Post Spill'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(messageController.dispose);
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
