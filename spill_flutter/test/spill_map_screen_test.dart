@@ -32,6 +32,7 @@ void main() {
               required onMapCreated,
               required onTap,
               required onLongPress,
+              required gesturesEnabled,
             }) {
               return Container(
                 color: Colors.white,

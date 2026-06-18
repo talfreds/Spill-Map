@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'dart:html' as html;
 
 /// Configuration for Spill Map application.
 /// 
@@ -30,17 +29,17 @@ class SpillConfig {
     
     // Auto-detect for web development
     if (kIsWeb) {
-      final hostname = html.window.location.hostname ?? 'localhost';
-      final protocol = html.window.location.protocol.replaceAll(':', '');
+      final hostname = Uri.base.host.isEmpty ? 'localhost' : Uri.base.host;
+      final scheme = Uri.base.scheme.isEmpty ? 'http' : Uri.base.scheme;
       
       // For GitHub Codespaces: fluffy-space-chainsaw-x9rr4gpqw75f6qqr-8080.app.github.dev
       // maps to fluffy-space-chainsaw-x9rr4gpqw75f6qqr-8000.app.github.dev
       if (hostname.contains('.app.github.dev')) {
-        return '$protocol://${hostname.replaceAll('-8080.', '-8000.')}'; 
+        return '$scheme://${hostname.replaceAll('-8080.', '-8000.')}';
       }
       
       // Local web development
-      return '$protocol://localhost:8000';
+      return '$scheme://localhost:8000';
     }
     
     // Mobile/desktop platforms default to localhost
