@@ -119,7 +119,8 @@ class SpillService {
     );
 
     if (uploadResponse.statusCode >= 400) {
-      throw Exception('Image upload failed with status ${uploadResponse.statusCode}.');
+      throw Exception(
+          'Image upload failed with status ${uploadResponse.statusCode}.');
     }
 
     return publicUrl;
@@ -157,7 +158,8 @@ class SpillService {
     required String spillId,
     required String message,
   }) async {
-    final uri = Uri.parse('${SpillConfig.backendBaseUrl}/spill/$spillId/comments');
+    final uri =
+        Uri.parse('${SpillConfig.backendBaseUrl}/spill/$spillId/comments');
     final response = await _httpClient.post(
       uri,
       headers: await _buildJsonHeaders(),

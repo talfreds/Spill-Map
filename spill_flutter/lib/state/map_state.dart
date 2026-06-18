@@ -38,7 +38,8 @@ class PinStateNotifier extends StateNotifier<LatLng?> {
   }
 }
 
-final pinStateProvider = StateNotifierProvider<PinStateNotifier, LatLng?>((ref) {
+final pinStateProvider =
+    StateNotifierProvider<PinStateNotifier, LatLng?>((ref) {
   return PinStateNotifier();
 });
 
@@ -55,8 +56,8 @@ class LocalSpillsNotifier extends StateNotifier<Map<String, Spill>> {
 
 final localSpillsProvider =
     StateNotifierProvider<LocalSpillsNotifier, Map<String, Spill>>((ref) {
-      return LocalSpillsNotifier();
-    });
+  return LocalSpillsNotifier();
+});
 
 final remoteSpillsProvider = StreamProvider<List<Spill>>((ref) {
   final firestore = ref.watch(firestoreProvider);
@@ -98,21 +99,25 @@ final spillsProvider = Provider<AsyncValue<List<Spill>>>((ref) {
 
 final spillCommentsProvider =
     StreamProvider.family<List<SpillComment>, String>((ref, spillId) {
-      final firestore = ref.watch(firestoreProvider);
+  final firestore = ref.watch(firestoreProvider);
 
-      return firestore
-          .collection('spill_comments')
-          .where('spill_id', isEqualTo: spillId)
-          .snapshots()
-          .map((snapshot) {
-            final comments = snapshot.docs.map(SpillComment.fromFirestore).toList()
-              ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-            return comments;
-          });
-    });
+  return firestore
+      .collection('spill_comments')
+      .where('spill_id', isEqualTo: spillId)
+      .snapshots()
+      .map((snapshot) {
+    final comments = snapshot.docs.map(SpillComment.fromFirestore).toList()
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return comments;
+  });
+});
 
 final selectedSpillIdProvider = StateProvider<String?>((ref) {
   return null;
+});
+
+final newSpillSheetOpenProvider = StateProvider<bool>((ref) {
+  return false;
 });
 
 final selectedSpillProvider = Provider<Spill?>((ref) {

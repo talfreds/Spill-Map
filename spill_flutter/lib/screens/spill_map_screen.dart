@@ -13,6 +13,7 @@ typedef SpillMapBuilder = Widget Function({
   required void Function(GoogleMapController controller) onMapCreated,
   required void Function(LatLng latLng) onTap,
   required void Function(LatLng latLng) onLongPress,
+  required bool gesturesEnabled,
 });
 
 class SpillMapScreen extends ConsumerWidget {
@@ -25,7 +26,7 @@ class SpillMapScreen extends ConsumerWidget {
 
   final SpillMapBuilder? mapBuilder;
   final Future<void> Function(BuildContext context, LatLng point)? onPinDropped;
-  
+
   /// If true, returns just the map widget without Scaffold for use in dashboards.
   /// If false, returns full screen with Scaffold.
   final bool fullScreen;
@@ -39,6 +40,7 @@ class SpillMapScreen extends ConsumerWidget {
     final remoteSpills = ref.watch(remoteSpillsProvider);
     final selectedSpillId = ref.watch(selectedSpillIdProvider);
     final authState = ref.watch(authStateProvider);
+    final isNewSpillSheetOpen = ref.watch(newSpillSheetOpenProvider);
 
     final markers = <Marker>{
       if (pin != null)
@@ -64,11 +66,18 @@ class SpillMapScreen extends ConsumerWidget {
             ref.read(mapControllerProvider.notifier).state = controller;
           },
           onTap: (latLng) async {
+            if (isNewSpillSheetOpen) {
+              return;
+            }
             await _handlePointSelection(context, ref, latLng);
           },
           onLongPress: (latLng) async {
+            if (isNewSpillSheetOpen) {
+              return;
+            }
             await _handlePointSelection(context, ref, latLng);
           },
+          gesturesEnabled: !isNewSpillSheetOpen,
         ),
         Positioned(
           top: 16,
@@ -108,6 +117,7 @@ class SpillMapScreen extends ConsumerWidget {
     required void Function(GoogleMapController controller) onMapCreated,
     required void Function(LatLng latLng) onTap,
     required void Function(LatLng latLng) onLongPress,
+    required bool gesturesEnabled,
   }) {
     return GoogleMap(
       initialCameraPosition: CameraPosition(
@@ -117,6 +127,10 @@ class SpillMapScreen extends ConsumerWidget {
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,
       markers: markers,
+      scrollGesturesEnabled: gesturesEnabled,
+      zoomGesturesEnabled: gesturesEnabled,
+      rotateGesturesEnabled: gesturesEnabled,
+      tiltGesturesEnabled: gesturesEnabled,
       onMapCreated: onMapCreated,
       onTap: onTap,
       onLongPress: onLongPress,
@@ -156,12 +170,18 @@ class SpillMapScreen extends ConsumerWidget {
     WidgetRef ref,
     LatLng point,
   ) async {
+    if (ref.read(newSpillSheetOpenProvider)) {
+      return;
+    }
+
+    ref.read(newSpillSheetOpenProvider.notifier).state = true;
     ref.read(pinStateProvider.notifier).setPin(point);
 
     try {
       final showSheet = onPinDropped ?? _showSpillSheet;
       await showSheet(context, point);
     } finally {
+      ref.read(newSpillSheetOpenProvider.notifier).state = false;
       ref.read(pinStateProvider.notifier).clearPin();
     }
   }

@@ -6,7 +6,14 @@
       "version": "lts"
     }
   },
-  "forwardPorts": [8080],
+  "forwardPorts": [8080, 8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "FastAPI Backend",
+      "protocol": "http",
+      "visibility": "public"
+    }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
